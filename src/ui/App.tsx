@@ -1,14 +1,14 @@
 import { useState } from "react";
-import { EXAMPLES, type ExampleInput } from "../examples";
-import { ingest, type IngestResult } from "../ingest";
+import { DEMO_CASES, type DemoCase } from "../examples/cases";
+import { FALLBACKS } from "../ingest/fallbacks";
 import { validate, type ValidationResult } from "../validate";
-import { toVdeMapped, type VdeRow } from "../adapters/vde";
 import { toTina, type TinaRecord } from "../adapters/tina";
 import { buildResponse, type DraftMessage } from "../respond";
 import { openCase, receiveMessage, type ProcessCase } from "../process";
-import type { MockMessage } from "../examples/messages";
+import { lookupCase, type CaseRecord } from "../process/caseDb";
+import type { CanonicalRequest } from "../canonical";
 
-import { InputPicker } from "./components/InputPicker";
+import { CasePicker } from "./components/CasePicker";
 import { ParsedDataView } from "./components/ParsedDataView";
 import { TinaExportView } from "./components/TinaExportView";
 import { ValidationView } from "./components/ValidationView";
@@ -16,40 +16,47 @@ import { ResponseView } from "./components/ResponseView";
 import { ProcessTimelineView } from "./components/ProcessTimelineView";
 import { RaciView } from "./components/RaciView";
 
-interface PipelineState {
-  example: ExampleInput;
-  ingestResult: IngestResult;
+const FALLBACK_MAP: Record<DemoCase["id"], "complete" | "chaotic"> = {
+  clean: "complete",
+  messy: "chaotic",
+};
+
+interface CaseState {
+  demo: DemoCase;
+  request: CanonicalRequest;
   validation: ValidationResult;
-  vdeRows: VdeRow[];
   tina: TinaRecord;
   draft: DraftMessage;
   kase: ProcessCase;
+  dbRecord: CaseRecord | null;
+  nextMsgIdx: number;
 }
 
 export function App() {
-  const [state, setState] = useState<PipelineState | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [state, setState] = useState<CaseState | null>(null);
 
-  async function run(example: ExampleInput) {
-    setBusy(true);
-    const ingestResult = await ingest(example);
-    const req = ingestResult.request;
-    const validation = validate(req);
-    const vdeRows = toVdeMapped(req);
-    const tina = toTina(req);
-    const draft = buildResponse(req, validation);
-    const kase = openCase(req);
-    setState({ example, ingestResult, validation, vdeRows, tina, draft, kase });
-    setBusy(false);
+  function pickCase(demo: DemoCase) {
+    const request = FALLBACKS[FALLBACK_MAP[demo.id]](demo.raw);
+    const validation = validate(request);
+    const tina = toTina(request);
+    const draft = buildResponse(request, validation);
+    const kase = openCase(request);
+    const dbRecord = lookupCase(request.requestId);
+    setState({ demo, request, validation, tina, draft, kase, dbRecord, nextMsgIdx: 0 });
   }
 
-  function onMessage(msg: MockMessage) {
-    setState((prev) =>
-      prev
-        ? { ...prev, kase: receiveMessage(prev.kase, { ...msg, requestId: prev.kase.requestId }) }
-        : prev,
-    );
+  function playNextMessage() {
+    setState((prev) => {
+      if (!prev || prev.nextMsgIdx >= prev.demo.messages.length) return prev;
+      const msg = prev.demo.messages[prev.nextMsgIdx];
+      const kase = receiveMessage(prev.kase, { ...msg, requestId: prev.kase.requestId });
+      return { ...prev, kase, nextMsgIdx: prev.nextMsgIdx + 1 };
+    });
   }
+
+  const nextMsg = state && state.nextMsgIdx < state.demo.messages.length
+    ? state.demo.messages[state.nextMsgIdx]
+    : null;
 
   return (
     <div className="app">
@@ -57,22 +64,21 @@ export function App() {
         <div className="app__logo">Netzanschluss-Assistent</div>
         <h1>Eingehende Anfragen verarbeiten</h1>
         <p className="app__subtitle">
-          Anfragen aus allen Kanälen erfassen, auf Vollständigkeit prüfen,
-          fehlende Angaben nachfordern — und die gesamte Kommunikation
-          über den Lebenszyklus des Vorgangs nachvollziehbar dokumentieren.
+          Zwei Praxisfälle: vom Erstantrag über Vollständigkeitsprüfung
+          und Nachforderung bis zur Kommunikation während Installation und Bau.
         </p>
       </header>
 
-      <InputPicker examples={EXAMPLES} busy={busy} onPick={run} active={state?.example.id} />
+      <CasePicker cases={DEMO_CASES} active={state?.demo.id} onPick={pickCase} />
 
       {state && (
         <main>
           <div className="step-arrow">&#x25BC;</div>
 
           <ParsedDataView
-            raw={state.example.raw}
-            request={state.ingestResult.request}
-            channel={state.example.channel}
+            raw={state.demo.raw}
+            request={state.request}
+            channel={state.demo.channel}
           />
 
           <div className="step-arrow">&#x25BC;</div>
@@ -88,7 +94,13 @@ export function App() {
 
           <div className="step-arrow">&#x25BC;</div>
 
-          <ProcessTimelineView kase={state.kase} onMessage={onMessage} />
+          <ProcessTimelineView
+            kase={state.kase}
+            dbRecord={state.dbRecord}
+            nextMsg={nextMsg}
+            onPlayNext={playNextMessage}
+            allDone={state.nextMsgIdx >= state.demo.messages.length}
+          />
 
           <div className="step-arrow">&#x25BC;</div>
 

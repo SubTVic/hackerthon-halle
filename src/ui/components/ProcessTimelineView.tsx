@@ -1,10 +1,15 @@
 import type { ProcessCase, ProcessEvent } from "../../process";
 import { openBlockers } from "../../process";
-import { MOCK_MESSAGES, type MockMessage } from "../../examples/messages";
+import type { CaseRecord } from "../../process/caseDb";
+import type { MockMessage } from "../../examples/messages";
+import { CaseContextView } from "./CaseContextView";
 
 interface Props {
   kase: ProcessCase;
-  onMessage: (msg: MockMessage) => void;
+  dbRecord: CaseRecord | null;
+  nextMsg: MockMessage | null;
+  onPlayNext: () => void;
+  allDone: boolean;
 }
 
 const ROLE_LABEL: Record<ProcessEvent["senderRole"], string> = {
@@ -41,7 +46,7 @@ const SEV_CLASS: Record<ProcessEvent["severity"], string> = {
   blocker: "ev--blocker",
 };
 
-export function ProcessTimelineView({ kase, onMessage }: Props) {
+export function ProcessTimelineView({ kase, dbRecord, nextMsg, onPlayNext, allDone }: Props) {
   const blockers = openBlockers(kase);
   const complaints = kase.events.filter((e) => e.type === "complaint");
 
@@ -58,17 +63,21 @@ export function ProcessTimelineView({ kase, onMessage }: Props) {
         )}
       </div>
 
-      <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 14 }}>
-        Nachrichten simulieren, die während des Netzanschluss-Prozesses eingehen:
-      </p>
+      {dbRecord && <CaseContextView record={dbRecord} />}
 
-      <div className="msg-buttons">
-        {MOCK_MESSAGES.map((m) => (
-          <button key={m.label} className="msg-btn" onClick={() => onMessage(m)}>
-            <span className="msg-btn__icon">{CHANNEL_ICON[m.channel] ?? "📨"}</span>
-            <span className="msg-btn__text">{m.label}</span>
+      <div className="next-msg-area">
+        {nextMsg ? (
+          <button className="next-msg-btn" onClick={onPlayNext}>
+            <span className="next-msg-btn__icon">{CHANNEL_ICON[nextMsg.channel] ?? "📨"}</span>
+            <div className="next-msg-btn__content">
+              <span className="next-msg-btn__label">Nächste Nachricht einspielen:</span>
+              <span className="next-msg-btn__title">{nextMsg.label}</span>
+            </div>
+            <span className="next-msg-btn__arrow">→</span>
           </button>
-        ))}
+        ) : allDone ? (
+          <div className="next-msg-done">Alle Nachrichten für diesen Fall eingespielt.</div>
+        ) : null}
       </div>
 
       <ol className="timeline">
