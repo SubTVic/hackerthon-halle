@@ -10,7 +10,7 @@
 // required/precondition pro PV-Feld lebt in ./fields.ts.
 // ============================================================================
 
-export type Channel = "email" | "letter" | "fax" | "portal" | "phone";
+export type Channel = "email" | "letter" | "fax" | "portal" | "phone" | "sms";
 
 export type ApplicantRole =
   | "operator" // Anlagenbetreiber / Anschlussnutzer

@@ -8,6 +8,8 @@
 //   4. -> Lückenprüfung markiert fehlende Pflichtfelder rot
 //   5. -> Nachforderungs-Mail wird automatisch erzeugt
 //   6. RACI-Stakeholder-Ansicht als Ausblick (statisch)
+//   7. -> Prozess-Kommunikation: Nachrichten WÄHREND des Vorgangs
+//         (z.B. Techniker-SMS mit Problemmeldung) landen in der Timeline
 //
 // Läuft komplett mit Fakes (kein API-Key nötig). Die Verdrahtung ist fertig;
 // die einzelnen Panels sind als Komponenten in ./components ausgelagert.
@@ -20,12 +22,15 @@ import { validate, type ValidationResult } from "../validate";
 import { toVdeMapped, type VdeRow } from "../adapters/vde";
 import { toTina, type TinaRecord } from "../adapters/tina";
 import { buildResponse, type DraftMessage } from "../respond";
+import { openCase, receiveMessage, type ProcessCase } from "../process";
+import type { MockMessage } from "../examples/messages";
 
 import { InputPicker } from "./components/InputPicker";
 import { CanonicalView } from "./components/CanonicalView";
 import { TinaExportView } from "./components/TinaExportView";
 import { ValidationView } from "./components/ValidationView";
 import { ResponseView } from "./components/ResponseView";
+import { ProcessTimelineView } from "./components/ProcessTimelineView";
 import { RaciView } from "./components/RaciView";
 
 interface PipelineState {
@@ -35,6 +40,7 @@ interface PipelineState {
   vdeRows: VdeRow[];
   tina: TinaRecord;
   draft: DraftMessage;
+  kase: ProcessCase;
 }
 
 export function App() {
@@ -50,8 +56,18 @@ export function App() {
     const vdeRows = toVdeMapped(req);
     const tina = toTina(req);
     const draft = buildResponse(req, validation);
-    setState({ example, ingestResult, validation, vdeRows, tina, draft });
+    const kase = openCase(req);
+    setState({ example, ingestResult, validation, vdeRows, tina, draft, kase });
     setBusy(false);
+  }
+
+  // Spielt eine Prozess-Nachricht (z.B. Techniker-SMS) in den aktuellen Vorgang.
+  function onMessage(msg: MockMessage) {
+    setState((prev) =>
+      prev
+        ? { ...prev, kase: receiveMessage(prev.kase, { ...msg, requestId: prev.kase.requestId }) }
+        : prev,
+    );
   }
 
   return (
@@ -59,8 +75,8 @@ export function App() {
       <header className="app__header">
         <h1>Grid Connection Funnel</h1>
         <p className="app__subtitle">
-          Beliebige Eingänge → kanonisches JSON → internes Zielformat (VDE).
-          Lückenprüfung &amp; automatische Nachforderung.
+          Beliebige Eingänge → kanonisches JSON → internes Zielformat (TINA).
+          Lückenprüfung, automatische Nachforderung &amp; Prozess-Kommunikation.
         </p>
       </header>
 
@@ -76,6 +92,7 @@ export function App() {
           <TinaExportView record={state.tina} missing={state.validation.missing} />
           <ValidationView result={state.validation} />
           <ResponseView draft={state.draft} />
+          <ProcessTimelineView kase={state.kase} onMessage={onMessage} />
           <RaciView />
         </main>
       )}

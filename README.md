@@ -29,6 +29,7 @@ npm run dev      # öffnet die Demo, läuft komplett mit hartkodierten Fallbacks
 | `ingest/`      | halb-fake   | Eingangs-Parser; LLM optional, sonst hartkodierte Fallback-JSONs |
 | `adapters/vde` | echt-genug  | Mapping kanonisch → VDE-Datenset-Feldnummern |
 | `respond/`     | halb-fake   | Nachforderungs-Mail (echt generiert, **nicht** versendet) |
+| `process/`     | echt-genug  | Vorgangs-Timeline: nimmt Kommunikation **während** des Prozesses auf (z.B. Techniker-SMS mit Problemmeldung), klassifiziert & führt offene Blocker |
 | `ui/`          | fake        | Demo-Frontend, zeigt den End-to-End-Pfad |
 | `data/`        | —           | `vde-pv-fields.json` — 104 PV-Felder aus VDE-Datenset 3.0 |
 
