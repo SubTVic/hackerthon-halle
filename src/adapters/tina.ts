@@ -1,17 +1,16 @@
 // ============================================================================
 // TINA ADAPTER — kanonisches JSON / VDE -> TINA-Zielformat
 // ============================================================================
-// TINA ist das interne Zielsystem, in das exportiert werden soll. Dieser
-// Adapter transformiert die kanonische Anfrage (bzw. den VDE-Export) in einen
-// TINA-Datensatz.
+// TINA = CRM für Netzbetreiber von CURSOR (cursor.de), eingesetzt u.a. bei
+// TransnetBW. Integration/Datenaustausch läuft laut Hersteller über CSV-Im-/
+// Export und Systemschnittstellen. Es gibt KEIN öffentliches Feldschema — die
+// exakten Spaltennamen kommen aus dem CURSOR-Import-Template des Kunden.
 //
-// ⚠️ FORMAT-ANNAHME: Die genaue TINA-Feldstruktur ist noch zu bestätigen
-//   (siehe Frage an den Nutzer). Unten eine plausible, klar gekapselte
-//   Struktur — sobald die echte TINA-Spezifikation vorliegt, nur `toTina`
-//   und `serializeTina` anpassen, der Rest des Systems bleibt unberührt.
+// Dieser Adapter transformiert die kanonische Anfrage (über den VDE-Export) in
+// einen TINA-Datensatz und serialisiert ihn als CSV (dokumentierter TINA-Weg).
 //
-// TODO(sonnet): echte TINA-Felder/Serialisierung (XML? CSV? JSON?) einsetzen,
-//   sobald das Format feststeht.
+// TODO(sonnet): echte TINA-Spaltennamen aus dem CURSOR-Import-Template in
+//   TINA_KEYS eintragen. Struktur + Serialisierung bleiben sonst unverändert.
 // ============================================================================
 
 import type { CanonicalRequest } from "../canonical";
@@ -65,11 +64,34 @@ export function toTina(req: CanonicalRequest): TinaRecord {
   };
 }
 
+/** CSV-escaping nach RFC 4180 (Anführungszeichen verdoppeln, bei ;/"/\n quoten). */
+function csvCell(value: string): string {
+  return /[";\n]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
+}
+
 /**
- * Serialisiert einen TINA-Datensatz in das Austauschformat.
- * TODO(sonnet): echtes TINA-Format (XML/CSV/…) statt JSON, sobald bekannt.
+ * Serialisiert einen TINA-Datensatz als CSV (eine Zeile pro Anfrage) —
+ * der von CURSOR/TINA dokumentierte Im-/Export-Weg. Semikolon-getrennt
+ * (deutsche Locale). Kopfdaten + Felder in einer flachen Spaltenliste.
+ *
+ * TODO(sonnet): Trennzeichen/Encoding (UTF-8 BOM?) an das konkrete
+ *   CURSOR-Import-Template anpassen.
  */
 export function serializeTina(record: TinaRecord): string {
+  const cols: Array<[string, string | null]> = [
+    ["REQUEST_ID", record.header.requestId],
+    ["CHANNEL", record.header.channel],
+    ["RECEIVED_AT", record.header.receivedAt],
+    ["INSTALLATION_TYPE", record.header.installationType],
+    ...record.fields.map((f) => [f.key, f.value] as [string, string | null]),
+  ];
+  const header = cols.map(([k]) => csvCell(k)).join(";");
+  const row = cols.map(([, v]) => csvCell(v ?? "")).join(";");
+  return `${header}\n${row}`;
+}
+
+/** Alternative JSON-Repräsentation (für Debug/Anzeige). */
+export function serializeTinaJson(record: TinaRecord): string {
   return JSON.stringify(record, null, 2);
 }
 

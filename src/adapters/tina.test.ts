@@ -18,9 +18,22 @@ describe("adapters/tina — Export ins TINA-Zielformat", () => {
     expect(byNr["3010"].value).toBe("9.8");
   });
 
-  it("serialisiert in einen String (Format vorläufig)", () => {
-    const out = serializeTina(toTina(FALLBACKS.gappy("raw")));
-    expect(typeof out).toBe("string");
-    expect(out).toContain("GRID_CONNECTION_REQUEST");
+  it("serialisiert als CSV mit Kopfzeile + Datenzeile", () => {
+    const out = serializeTina(toTina(FALLBACKS.complete("raw")));
+    const lines = out.split("\n");
+    expect(lines).toHaveLength(2);
+    const cols = lines[0].split(";");
+    const vals = lines[1].split(";");
+    expect(cols).toContain("REQUEST_ID");
+    expect(cols).toContain("OPERATOR_EMAIL");
+    expect(vals[cols.indexOf("REQUEST_ID")]).toBe("REQ-COMPLETE-001");
+    expect(vals[cols.indexOf("OPERATOR_EMAIL")]).toBe("maria.schmidt@example.de");
+  });
+
+  it("escaped CSV-Sonderzeichen (Semikolon/Anführungszeichen)", () => {
+    const req = FALLBACKS.complete("raw");
+    req.parties[0].name = 'Müller; "Solar" GmbH';
+    const out = serializeTina(toTina(req));
+    expect(out).toContain('"Müller; ""Solar"" GmbH"');
   });
 });

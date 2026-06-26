@@ -35,7 +35,7 @@ export function TinaExportView({ record, missing }: Props) {
         </tbody>
       </table>
       <details className="raw-details">
-        <summary>TINA-Datensatz (serialisiert)</summary>
+        <summary>TINA-CSV (Import-Datei, Format vorläufig)</summary>
         <pre className="json">{serializeTina(record)}</pre>
       </details>
     </section>
