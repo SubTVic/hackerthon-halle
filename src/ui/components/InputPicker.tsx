@@ -7,11 +7,37 @@ interface Props {
   onPick: (e: ExampleInput) => void;
 }
 
-// Schritt 1: Eingang wählen. FAKE-Kanäle = 3 Buttons mit Beispiel-Eingängen.
+const CHANNEL_ICON: Record<string, string> = {
+  email: "✉️",
+  fax: "📠",
+  phone: "📞",
+  letter: "✉️",
+  portal: "🌐",
+  sms: "📱",
+};
+
+const LABELS: Record<ExampleInput["id"], { title: string; desc: string }> = {
+  complete: {
+    title: "Saubere E-Mail",
+    desc: "Alle Angaben vorhanden, klar strukturiert",
+  },
+  gappy: {
+    title: "Unvollständige Anfrage",
+    desc: "Wichtige Pflichtangaben fehlen",
+  },
+  chaotic: {
+    title: "Unleserliches Fax",
+    desc: "Unstrukturiert, Flurdaten statt Adresse",
+  },
+};
+
 export function InputPicker({ examples, busy, active, onPick }: Props) {
   return (
     <section className="card">
-      <h2>1 · Eingang wählen</h2>
+      <div className="card__title">
+        <span className="card__title-icon">{"📨"}</span>
+        Eingehende Anfrage ausw&auml;hlen
+      </div>
       <div className="picker">
         {examples.map((e) => (
           <button
@@ -20,8 +46,9 @@ export function InputPicker({ examples, busy, active, onPick }: Props) {
             disabled={busy}
             onClick={() => onPick(e)}
           >
-            <span className="picker__title">{e.title}</span>
-            <span className="picker__channel">{e.channel}</span>
+            <span className="picker__icon">{CHANNEL_ICON[e.channel] ?? "📨"}</span>
+            <span className="picker__title">{LABELS[e.id].title}</span>
+            <span className="picker__desc">{LABELS[e.id].desc}</span>
           </button>
         ))}
       </div>

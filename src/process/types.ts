@@ -23,6 +23,7 @@ export type ProcessPhase =
 /** Wer hat die Nachricht geschickt? */
 export type SenderRole =
   | "applicant" // Antragsteller / Anlagenbetreiber
+  | "investor" // Investor / Bauherr
   | "installer" // Elektrofachbetrieb
   | "technician" // Monteur/Techniker auf der Baustelle
   | "grid_operator" // Sachbearbeiter Netzbetreiber
@@ -33,6 +34,7 @@ export type EventType =
   | "status_update" // "Montage abgeschlossen"
   | "problem_report" // "Zählerschrank passt nicht" -> Handlung nötig
   | "question" // Rückfrage
+  | "complaint" // Beschwerde / Eskalation ("Warum dauert das so lange?")
   | "info_request" // Nachforderung (vom Netzbetreiber raus)
   | "document_submitted" // Nachweis/Plan nachgereicht
   | "appointment"; // Terminabstimmung

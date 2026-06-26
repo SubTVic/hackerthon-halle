@@ -4,29 +4,42 @@ interface Props {
   result: ValidationResult;
 }
 
-// Schritt 4: Lückenprüfung (ECHT) — Fortschritt + Liste fehlender Pflichtfelder.
 export function ValidationView({ result }: Props) {
   const pct = Math.round(result.completeness * 100);
   return (
     <section className="card">
-      <h2>
-        4 · Vollständigkeitsprüfung
-        <span className={`badge ${result.ok ? "badge--ok" : "badge--warn"}`}>
-          {result.ok ? "vollständig" : `${result.missing.length} fehlend`}
-        </span>
-      </h2>
+      <div className="card__title">
+        <span className="card__title-icon">{"✅"}</span>
+        Vollständigkeitsprüfung
+        {result.ok ? (
+          <span className="badge badge--ok">Vollständig</span>
+        ) : (
+          <span className="badge badge--bad">{result.missing.length} Angaben fehlen</span>
+        )}
+      </div>
+
       <div className="progress">
         <div className="progress__bar" style={{ width: `${pct}%` }} />
-        <span className="progress__label">{pct}% Pflichtfelder erfüllt</span>
+        <span className="progress__label">{pct} % der Pflichtangaben vorhanden</span>
       </div>
+
       {result.missing.length > 0 && (
-        <ul className="missing-list">
+        <ul className="checklist">
           {result.missing.map((m) => (
-            <li key={m.path}>
-              <span className="missing-tag">fehlt</span> {m.label}
-              {m.vdeNr && <code> · VDE {m.vdeNr}</code>}
+            <li key={m.path} className="is-missing">
+              <span className="check-icon">&#x2717;</span>
+              <span>{m.label}</span>
             </li>
           ))}
+        </ul>
+      )}
+
+      {result.ok && (
+        <ul className="checklist">
+          <li className="is-ok">
+            <span className="check-icon">&#x2713;</span>
+            <span>Alle Pflichtangaben für PV-Anlagen bis 30 kW sind vorhanden.</span>
+          </li>
         </ul>
       )}
     </section>

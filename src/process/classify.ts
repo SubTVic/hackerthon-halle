@@ -14,6 +14,10 @@ const BLOCKER_HINTS = [
   "geht nicht", "passt nicht", "kein platz", "fehlt", "kaputt", "defekt",
   "beschädigt", "gesperrt", "kein zugang", "stopp", "abbruch", "gefahr",
 ];
+const COMPLAINT_HINTS = [
+  "dauert", "wann endlich", "zu lange", "beschwer", "unzufrieden", "unakzeptabel",
+  "wochen", "monate", "eskalier", "anwalt", "frist", "warum so lange",
+];
 const WARNING_HINTS = ["verzöger", "verspät", "wartet", "unklar", "rückfrage", "problem"];
 const STATUS_HINTS = ["fertig", "abgeschlossen", "montiert", "installiert", "erledigt", "angeschlossen"];
 
@@ -22,6 +26,9 @@ export function classifyHeuristic(raw: string): { type: EventType; severity: Sev
   const t = raw.toLowerCase();
   if (BLOCKER_HINTS.some((h) => t.includes(h))) {
     return { type: "problem_report", severity: "blocker" };
+  }
+  if (COMPLAINT_HINTS.some((h) => t.includes(h))) {
+    return { type: "complaint", severity: "warning" };
   }
   if (WARNING_HINTS.some((h) => t.includes(h))) {
     return { type: "problem_report", severity: "warning" };

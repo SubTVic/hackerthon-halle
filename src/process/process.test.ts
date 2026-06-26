@@ -20,7 +20,7 @@ describe("process — Vorgangs-Timeline", () => {
 
   it("nimmt eine Techniker-SMS als Problemmeldung auf und blockiert den Vorgang", () => {
     let k = newCase();
-    k = receiveMessage(k, { ...msgByLabel("Techniker meldet Problem"), requestId: k.requestId });
+    k = receiveMessage(k, { ...msgByLabel("Techniker: Problem"), requestId: k.requestId });
     expect(k.events).toHaveLength(2);
     const blockers = openBlockers(k);
     expect(blockers).toHaveLength(1);
@@ -28,6 +28,17 @@ describe("process — Vorgangs-Timeline", () => {
     expect(blockers[0].channel).toBe("sms");
     expect(blockers[0].type).toBe("problem_report");
     expect(isBlocked(k)).toBe(true);
+  });
+
+  it("klassifiziert Investor-Telefonat als Beschwerde", () => {
+    let k = newCase();
+    k = receiveMessage(k, { ...msgByLabel("Investor ruft an"), requestId: k.requestId });
+    expect(k.events).toHaveLength(2);
+    const complaint = k.events.find((e) => e.type === "complaint");
+    expect(complaint).toBeDefined();
+    expect(complaint!.senderRole).toBe("investor");
+    expect(complaint!.channel).toBe("phone");
+    expect(complaint!.severity).toBe("warning");
   });
 
   it("hält Events chronologisch sortiert", () => {
@@ -45,9 +56,11 @@ describe("process — Vorgangs-Timeline", () => {
 });
 
 describe("process — Heuristik-Klassifikation", () => {
-  it("erkennt Blocker, Status und Frage", () => {
+  it("erkennt Blocker, Status, Frage und Beschwerde", () => {
     expect(classifyHeuristic("Zählerschrank passt nicht").severity).toBe("blocker");
     expect(classifyHeuristic("Montage abgeschlossen").type).toBe("status_update");
     expect(classifyHeuristic("Welches Messkonzept?").type).toBe("question");
+    expect(classifyHeuristic("Warum dauert das schon wieder Wochen?").type).toBe("complaint");
+    expect(classifyHeuristic("Das ist unakzeptabel, ich rufe meinen Anwalt an").type).toBe("complaint");
   });
 });
