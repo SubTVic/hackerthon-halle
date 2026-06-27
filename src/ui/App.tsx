@@ -19,6 +19,9 @@ import { ResponseView } from "./components/ResponseView";
 import { ProcessTimelineView } from "./components/ProcessTimelineView";
 import { RaciView } from "./components/RaciView";
 import { TransparencyView } from "./components/TransparencyView";
+import { ProjectsView } from "./components/projects/ProjectsView";
+
+type Tab = "triage" | "solution1" | "solution2";
 
 interface PipelineState {
   example: ExampleInput;
@@ -35,7 +38,7 @@ interface PipelineState {
 export function App() {
   const [state, setState] = useState<PipelineState | null>(null);
   const [busy, setBusy] = useState(false);
-  const [tab, setTab] = useState<"solution1" | "solution2">("solution1");
+  const [tab, setTab] = useState<Tab>("triage");
 
   async function run(example: ExampleInput) {
     setBusy(true);
@@ -80,31 +83,50 @@ export function App() {
     <div className="app">
       <header className="app__header">
         <div className="app__logo">Netzanschluss-Assistent</div>
-        <h1>Eingehende Anfragen verarbeiten</h1>
+        <h1>Eingehende Kommunikation in Vorgänge verwandeln</h1>
         <p className="app__subtitle">
-          Anfragen aus allen Kanälen erfassen, auf Vollständigkeit prüfen,
-          fehlende Angaben nachfordern — und die gesamte Kommunikation
-          über den Lebenszyklus des Vorgangs nachvollziehbar dokumentieren.
+          Nachrichten aus allen Kanälen (E-Mail, Brief, Anruf) werden
+          klassifiziert, je Projekt zu Threads gebündelt, gegen das aktuelle
+          Regelwerk geprüft und — nach menschlicher Freigabe — in der Sprache
+          des Empfängers beantwortet.
         </p>
       </header>
 
-      <InputPicker examples={EXAMPLES} busy={busy} onPick={run} active={state?.example.id} />
+      <div className="tabs">
+        <button className={"tab" + (tab === "triage" ? " tab--active" : "")} onClick={() => setTab("triage")}>
+          <span className="tab__label">Vorgangs-Triage</span>
+          <span className="tab__desc">Posteingang → Threads → CRM</span>
+        </button>
+        <button className={"tab" + (tab === "solution1" ? " tab--active" : "")} onClick={() => setTab("solution1")}>
+          <span className="tab__label">Konzept: CRM-Pipeline</span>
+          <span className="tab__desc">Einzelanfrage end-to-end</span>
+        </button>
+        <button className={"tab" + (tab === "solution2" ? " tab--active" : "")} onClick={() => setTab("solution2")}>
+          <span className="tab__label">Konzept: Transparenz</span>
+          <span className="tab__desc">Stakeholder-Übersetzung</span>
+        </button>
+      </div>
 
-      {state && (
+      {tab === "triage" && (
         <main>
-          <div className="tabs">
-            <button className={"tab" + (tab === "solution1" ? " tab--active" : "")} onClick={() => setTab("solution1")}>
-              <span className="tab__label">Lösung 1</span>
-              <span className="tab__desc">Anfrage → CRM-Pipeline</span>
-            </button>
-            <button className={"tab" + (tab === "solution2" ? " tab--active" : "")} onClick={() => setTab("solution2")}>
-              <span className="tab__label">Lösung 2</span>
-              <span className="tab__desc">Probleme transparent machen</span>
-            </button>
-          </div>
+          <ProjectsView />
+        </main>
+      )}
 
-          {tab === "solution1" && (
+      {(tab === "solution1" || tab === "solution2") && (
+        <main>
+          <InputPicker examples={EXAMPLES} busy={busy} onPick={run} active={state?.example.id} />
+
+          {!state && (
+            <p className="proj__hint" style={{ textAlign: "center", marginTop: 16 }}>
+              Bitte oben ein Beispiel auswählen, um den Ablauf zu starten.
+            </p>
+          )}
+
+          {state && tab === "solution1" && (
             <>
+              <div className="step-arrow">&#x25BC;</div>
+
               <ParsedDataView
                 raw={state.example.raw}
                 request={state.ingestResult.request}
@@ -141,14 +163,17 @@ export function App() {
             </>
           )}
 
-          {tab === "solution2" && (
-            <TransparencyView kase={state.kase} onMessage={onMessage} />
+          {state && tab === "solution2" && (
+            <>
+              <div className="step-arrow">&#x25BC;</div>
+              <TransparencyView kase={state.kase} onMessage={onMessage} />
+            </>
           )}
         </main>
       )}
 
       <footer className="app__footer">
-        Netzanschluss-Assistent &middot; Prototyp &middot; PV-Anlagen bis 30 kW
+        Netzanschluss-Assistent &middot; Prototyp &middot; Hackathon-Demo
       </footer>
     </div>
   );
