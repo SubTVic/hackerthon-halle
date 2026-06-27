@@ -60,3 +60,33 @@ export function compileCrm(
     threads: threadSummaries,
   };
 }
+
+// ----------------------------------------------------------------------------
+// TINA-Export — der verdichtete Datensatz als CSV für das CRM (CURSOR/TINA).
+// Semikolon-getrennt (deutsche Locale), RFC-4180-Escaping.
+// ----------------------------------------------------------------------------
+
+function csvCell(value: string): string {
+  if (/[";\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
+  return value;
+}
+
+export function serializeTinaCsv(crm: CrmProjectRecord): string {
+  const rows: string[][] = [
+    ["Projekt-Ref", "Vorgang", "Kategorie", "Thema", "Kanäle", "Nachrichten", "Dubletten"],
+    ...crm.threads.map((t) => [
+      crm.ref,
+      t.threadId,
+      t.category,
+      t.topic,
+      t.channels.join("+"),
+      String(t.messageCount),
+      String(t.compiledCount),
+    ]),
+  ];
+  // Offene Anforderungen als zusätzliche Zeilen (für die CRM-Aufgabenliste).
+  for (const req of crm.openRequirements) {
+    rows.push([crm.ref, "—", "OFFEN", req, "", "", ""]);
+  }
+  return rows.map((r) => r.map(csvCell).join(";")).join("\r\n");
+}

@@ -45,6 +45,14 @@ describe("projects — Threading & Dubletten", () => {
     expect(dup).toBeDefined();
   });
 
+  it("fasst die wiederholte Zeitplan-Nachfrage (RZ 1654) zusammen", () => {
+    const threads = buildThreads(inboxForProject("1654"), "1654");
+    const sThread = threads.find((t) => t.category === "S")!;
+    expect(sThread.messages.length).toBe(2);
+    expect(sThread.compiledCount).toBe(1);
+    expect(sThread.topic).toContain("Zeitplan");
+  });
+
   it("ordnet Nachrichten ohne Referenznummer über den Inhalt zu", () => {
     // Brief vom Bauordnungsamt ohne refHint -> Projekt 1654 (Halle-Süd).
     const threads = buildThreads(inboxForProject("1654"), "1654");
