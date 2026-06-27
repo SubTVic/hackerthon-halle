@@ -6,6 +6,7 @@ import {
   defaultProfile,
   evaluateProfile,
   compileCrm,
+  serializeTinaCsv,
   CATEGORY_LABEL,
   type ApprovalStatus,
   type CategoryCode,
@@ -15,6 +16,7 @@ import {
 } from "../../../projects";
 import { RequirementsPanel } from "./RequirementsPanel";
 import { ResponseDraftView } from "./ResponseDraftView";
+import { ThreadPerspectives } from "./ThreadPerspectives";
 
 const TYPE_ICON: Record<Project["type"], string> = {
   datacenter: "🖥️",
@@ -36,6 +38,7 @@ export function ProjectsView() {
   const [ref, setRef] = useState<string>(PROJECTS[0].ref);
   const [profiles, setProfiles] = useState<Record<string, RequirementProfile>>({});
   const [openThreadId, setOpenThreadId] = useState<string | null>(null);
+  const [perspThreadId, setPerspThreadId] = useState<string | null>(null);
   const [approvals, setApprovals] = useState<Record<string, ApprovalStatus>>({});
 
   const project = PROJECTS.find((p) => p.ref === ref)!;
@@ -202,12 +205,24 @@ export function ProjectsView() {
                   ))}
                 </ol>
 
-                <button
-                  className="btn btn--ghost thread__answer"
-                  onClick={() => setOpenThreadId(openThreadId === t.id ? null : t.id)}
-                >
-                  {openThreadId === t.id ? "Antwort schließen" : "Antwort entwerfen →"}
-                </button>
+                <div className="thread__btns">
+                  <button
+                    className="btn btn--ghost"
+                    onClick={() => setOpenThreadId(openThreadId === t.id ? null : t.id)}
+                  >
+                    {openThreadId === t.id ? "Antwort schließen" : "Antwort entwerfen →"}
+                  </button>
+                  <button
+                    className="btn btn--ghost"
+                    onClick={() => setPerspThreadId(perspThreadId === t.id ? null : t.id)}
+                  >
+                    {perspThreadId === t.id ? "Stakeholder-Sicht schließen" : "Stakeholder-Sicht 👁"}
+                  </button>
+                </div>
+
+                {perspThreadId === t.id && (
+                  <ThreadPerspectives thread={t} project={project} />
+                )}
 
                 {openThread?.id === t.id && (
                   <ResponseDraftView
@@ -273,6 +288,11 @@ export function ProjectsView() {
               </ul>
             </div>
           )}
+
+          <details className="export-detail">
+            <summary>TINA-Export anzeigen (CSV für CURSOR/TINA-Import)</summary>
+            <pre className="export-csv">{serializeTinaCsv(crm)}</pre>
+          </details>
         </div>
       </section>
     </div>

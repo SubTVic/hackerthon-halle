@@ -464,3 +464,40 @@ pre.export-csv { margin-top: 8px; padding: 12px; background: #f9fafb;
   border-radius: 10px; padding: 12px 16px; }
 .crm2__open-title { font-weight: 700; font-size: 13px; margin-bottom: 6px; color: var(--bad); }
 .crm2__open ul { margin: 0; padding-left: 18px; font-size: 13px; }
+
+/* ===== Pipeline legend (unified flow) ===== */
+.pipeline-legend { list-style: none; display: flex; gap: 8px; flex-wrap: wrap;
+  justify-content: center; padding: 0; margin: 0 0 24px; }
+.pipeline-legend li { font-size: 12px; font-weight: 600; color: var(--dim);
+  background: var(--card); border: 1px solid var(--line); border-radius: 999px;
+  padding: 5px 12px; }
+
+/* ===== Thread buttons row ===== */
+.thread__btns { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+
+/* ===== Stakeholder perspectives (in thread) ===== */
+.persp { margin-top: 12px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+  background: #fbfcfe; padding: 12px; }
+.persp__bar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.persp__bar-label { font-size: 12px; font-weight: 700; text-transform: uppercase;
+  color: var(--dim); letter-spacing: .04em; }
+.persp__chip { padding: 5px 12px; border: 1.5px solid var(--line); border-radius: 999px;
+  background: #fff; font-size: 12px; cursor: pointer; transition: all .15s; }
+.persp__chip:hover { border-color: var(--accent); }
+.persp__chip--on { background: var(--accent); color: #fff; border-color: var(--accent); }
+.persp__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 700px) { .persp__grid { grid-template-columns: 1fr; } }
+.persp__card { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: #fff; }
+.persp__card.rel--high { background: #fefce8; border-color: #fde68a; }
+.persp__head { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+.persp__icon { font-size: 15px; }
+.persp__role { font-weight: 700; font-size: 13px; }
+.persp__rel { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+  padding: 1px 7px; border-radius: 999px; margin-left: auto; }
+.persp__rel--high { background: var(--warn-bg); color: var(--warn); }
+.persp__rel--medium { background: var(--accent-light); color: var(--accent); }
+.persp__rel--low { background: #f3f4f6; color: var(--dim); }
+.persp__summary { font-size: 13px; line-height: 1.45; }
+.persp__action { margin-top: 8px; padding: 7px 9px; background: #fff7ed; border: 1px solid #fed7aa;
+  border-radius: 7px; font-size: 12px; display: flex; align-items: baseline; gap: 5px; }
+.persp__action-label { font-weight: 700; color: var(--warn); flex-shrink: 0; }

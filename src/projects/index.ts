@@ -14,5 +14,7 @@ export {
 export type { Requirement, RequirementProfile, RequirementStatus } from "./requirements";
 export { buildDraft } from "./respond";
 export type { ResponseDraft, ApprovalStatus } from "./respond";
-export { compileCrm } from "./crm";
+export { compileCrm, serializeTinaCsv } from "./crm";
 export type { CrmProjectRecord, CrmThreadSummary } from "./crm";
+export { perspectivesForThread, STAKEHOLDERS } from "./perspectives";
+export type { Stakeholder, Perspective } from "./perspectives";

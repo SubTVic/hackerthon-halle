@@ -55,7 +55,7 @@ const TOPIC_RULES: TopicRule[] = [
   { key: "kurzschluss", label: "Kurzschlussleistung / Netzrückwirkungen", hints: ["kurzschlussleistung", "oberschwingung", "netzrückwirk"] },
   { key: "blindleistung", label: "Blindleistung / FRT-Nachweis", hints: ["blindleistung", "frt", "q(u)", "kennlinie", "fault-ride"] },
   { key: "trafostation", label: "Standort Trafostation / Schallschutz", hints: ["trafostation", "schallschutz", "standort"] },
-  { key: "ibn-unterlagen", label: "Inbetriebnahme-Unterlagen", hints: ["inbetriebnahme", "anlagenzertifikat", "konformität", "einheitenzertifikat"] },
+  { key: "ibn-unterlagen", label: "Inbetriebnahme-Unterlagen", hints: ["inbetriebnahme-unterlagen", "anlagenzertifikat", "konformität", "einheitenzertifikat"] },
   { key: "anmeldung", label: "Anmeldung Anlage", hints: ["anmeldung", "wir melden", "datenblatt"] },
   { key: "verzoegerung", label: "Verzögerung Inbetriebnahme", hints: ["verzögert", "beschwer", "rechtliche"] },
   { key: "zeitplan", label: "Zeitplan / Leistungsbestätigung", hints: ["zeitplan", "neuigkeiten", "aktueller stand", "anschlussleistung", "leistungsbestätigung", "wann"] },
