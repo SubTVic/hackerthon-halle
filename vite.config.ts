@@ -5,5 +5,6 @@ import react from "@vitejs/plugin-react";
 // in ingest/llmParser.ts and ALWAYS has a hardcoded fallback so the live demo
 // never breaks. Deploy target: Vercel (static build).
 export default defineConfig({
+  base: "/hackerthon-halle/",
   plugins: [react()],
 });

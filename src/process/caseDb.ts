@@ -1,135 +1,119 @@
-// ============================================================================
-// FAKE CASE DATABASE — Auftragsdaten, wie sie im internen System stehen
-// ============================================================================
-// Simuliert die Datenbank des Netzbetreibers. Wenn eine Nachricht reinkommt
-// (z.B. Investor ruft an), wird der Auftragsstatus automatisch abgerufen und
-// dem Sachbearbeiter als Kontext angezeigt. Alle Daten hier sind hartkodiert.
-// ============================================================================
+import type { CrmUpdate } from "./extract";
 
 export interface Milestone {
   label: string;
-  date: string | null;
   done: boolean;
+  date?: string;
 }
 
 export interface PendingItem {
   label: string;
-  responsible: string;
-  since: string;
   overdue: boolean;
+  since?: string;
 }
 
-export interface CaseRecord {
-  requestId: string;
-  applicantName: string;
+export interface CaseNote {
+  date: string;
+  text: string;
+  source: string;
+}
+
+export interface CrmRecord {
+  applicant: string;
   siteAddress: string;
   powerKw: number;
   phase: string;
   phaseLabel: string;
   assignedTo: string;
-  createdAt: string;
-  lastActivity: string;
   daysOpen: number;
+  flags: string[];
   milestones: Milestone[];
-  pending: PendingItem[];
-  notes: string[];
+  pendingItems: PendingItem[];
+  notes: CaseNote[];
 }
 
-const FAKE_DB: Record<string, CaseRecord> = {
-  "REQ-COMPLETE-001": {
-    requestId: "REQ-COMPLETE-001",
-    applicantName: "Maria Schmidt",
-    siteAddress: "Bahnhofstraße 12, 06108 Halle (Saale)",
-    powerKw: 9.8,
-    phase: "application_phase_2",
-    phaseLabel: "Antragsprüfung (Phase 2)",
-    assignedTo: "Herr Weber (Sachbearbeitung)",
-    createdAt: "2026-06-20",
-    lastActivity: "2026-06-25",
-    daysOpen: 6,
-    milestones: [
-      { label: "Antrag eingegangen", date: "2026-06-20", done: true },
-      { label: "Vollständigkeitsprüfung", date: "2026-06-20", done: true },
-      { label: "Technische Netzprüfung", date: "2026-06-23", done: true },
-      { label: "Anschlusszusage", date: "2026-06-25", done: true },
-      { label: "Installation / Bau", date: null, done: false },
-      { label: "Inbetriebnahme", date: null, done: false },
-    ],
-    pending: [
-      { label: "Terminabstimmung Zählersetzung", responsible: "Messstellenbetreiber", since: "2026-06-25", overdue: false },
-    ],
-    notes: [
-      "Anschlusszusage am 25.06. erteilt, Netzverträglichkeit bestätigt.",
-      "Elektrofachbetrieb SolarTech GmbH, Eintragungsnr. EFB-2024-445.",
-    ],
-  },
-
-  "REQ-GAPPY-001": {
-    requestId: "REQ-GAPPY-001",
-    applicantName: "T. Müller",
-    siteAddress: "Halle (unvollständig)",
-    powerKw: 8.0,
-    phase: "application_phase_1",
-    phaseLabel: "Antrag unvollständig (Phase 1)",
-    assignedTo: "Frau Klein (Sachbearbeitung)",
-    createdAt: "2026-06-10",
-    lastActivity: "2026-06-15",
-    daysOpen: 16,
-    milestones: [
-      { label: "Antrag eingegangen", date: "2026-06-10", done: true },
-      { label: "Vollständigkeitsprüfung", date: "2026-06-10", done: true },
-      { label: "Nachforderung versendet", date: "2026-06-11", done: true },
-      { label: "Nachforderung beantwortet", date: null, done: false },
-      { label: "Technische Netzprüfung", date: null, done: false },
-      { label: "Anschlusszusage", date: null, done: false },
-    ],
-    pending: [
-      { label: "Antwort auf Nachforderung (Straße, PLZ, E-Mail)", responsible: "Antragsteller", since: "2026-06-11", overdue: true },
-      { label: "Scheinleistung Wechselrichter fehlt", responsible: "Antragsteller", since: "2026-06-11", overdue: true },
-    ],
-    notes: [
-      "Nachforderung am 11.06. per E-Mail versendet, keine Antwort seit 15 Tagen.",
-      "Keine Kontakt-E-Mail vorhanden — Nachforderung ging an Postadresse.",
-    ],
-  },
-
-  "REQ-CHAOTIC-001": {
-    requestId: "REQ-CHAOTIC-001",
-    applicantName: "Hausverwaltung Kröllwitz GmbH",
-    siteAddress: "Gemarkung Trotha, Flurstück 215/3",
-    powerKw: 11.0,
+export function initialCrmRecord(applicant: string, siteAddress: string, powerKw: number): CrmRecord {
+  return {
+    applicant,
+    siteAddress,
+    powerKw,
     phase: "construction",
-    phaseLabel: "Installation / Bau",
-    assignedTo: "Herr Weber (Sachbearbeitung)",
-    createdAt: "2026-05-15",
-    lastActivity: "2026-06-28",
-    daysOpen: 42,
+    phaseLabel: "Bau / Installation",
+    assignedTo: "Frau Weber (Sachbearbeiterin)",
+    daysOpen: 18,
+    flags: [],
     milestones: [
-      { label: "Antrag eingegangen", date: "2026-05-15", done: true },
-      { label: "Vollständigkeitsprüfung", date: "2026-05-16", done: true },
-      { label: "Nachforderung E-Mail + Scheinleistung", date: "2026-05-17", done: true },
-      { label: "Nachforderung beantwortet", date: "2026-05-28", done: true },
-      { label: "Technische Netzprüfung", date: "2026-06-05", done: true },
-      { label: "Anschlusszusage", date: "2026-06-10", done: true },
-      { label: "Installation / Bau", date: "2026-06-20", done: false },
-      { label: "Inbetriebnahme", date: null, done: false },
+      { label: "Antrag eingegangen", done: true, date: "10.06.2026" },
+      { label: "Vollständigkeitsprüfung", done: true, date: "12.06.2026" },
+      { label: "Netzverträglichkeit bestätigt", done: true, date: "15.06.2026" },
+      { label: "Montage PV-Anlage", done: false },
+      { label: "Zählersetzung", done: false },
+      { label: "Inbetriebnahme", done: false },
     ],
-    pending: [
-      { label: "Zählerschrank: Platz für NA-Schutz klären", responsible: "Elektrofachbetrieb / Techniker", since: "2026-06-28", overdue: true },
-      { label: "Zählersetzung (wartet auf Klärung Schrank)", responsible: "Messstellenbetreiber", since: "2026-06-28", overdue: false },
+    pendingItems: [
+      { label: "Lageplan nachreichen", overdue: true, since: "14.06.2026" },
     ],
     notes: [
-      "Verzögerung: Nachforderung brauchte 11 Tage (Fax-Rückantwort).",
-      "Techniker meldet am 28.06. Problem mit Zählerschrank vor Ort.",
-      "Investor (Hr. Kröllwitz) hat am 01.07. telefonisch Beschwerde eingelegt.",
+      { date: "15.06.2026", text: "Netzverträglichkeit geprüft — Anschluss genehmigt", source: "System" },
     ],
-  },
-};
+  };
+}
 
-/**
- * Holt den Auftragsstatus aus der "Datenbank".
- * Gibt null zurück wenn nicht gefunden (sollte in der Demo nicht vorkommen).
- */
-export function lookupCase(requestId: string): CaseRecord | null {
-  return FAKE_DB[requestId] ?? null;
+function today(): string {
+  return new Date().toLocaleDateString("de-DE");
+}
+
+export function applyCrmUpdate(record: CrmRecord, update: CrmUpdate, source: string): CrmRecord {
+  const r = {
+    ...record,
+    milestones: record.milestones.map((m) => ({ ...m })),
+    pendingItems: [...record.pendingItems.map((p) => ({ ...p }))],
+    notes: [...record.notes],
+    flags: [...record.flags],
+  };
+
+  switch (update.action) {
+    case "add_blocker":
+      r.pendingItems.push({ label: "⛔ " + update.description, overdue: false, since: today() });
+      break;
+    case "resolve_blocker":
+      r.pendingItems = r.pendingItems.filter(
+        (p) => !p.label.includes("⛔") || !p.label.toLowerCase().includes(update.description.substring(0, 20).toLowerCase()),
+      );
+      break;
+    case "add_pending":
+      r.pendingItems.push({ label: update.description, overdue: false, since: today() });
+      break;
+    case "resolve_pending": {
+      const idx = r.pendingItems.findIndex((p) =>
+        p.label.toLowerCase().includes((update.target ?? update.description).toLowerCase().substring(0, 15)),
+      );
+      if (idx >= 0) r.pendingItems.splice(idx, 1);
+      break;
+    }
+    case "complete_milestone": {
+      const ms = r.milestones.find((m) =>
+        m.label.toLowerCase().includes((update.target ?? update.description).toLowerCase().substring(0, 12)),
+      );
+      if (ms) {
+        ms.done = true;
+        ms.date = today();
+      }
+      break;
+    }
+    case "add_note":
+      r.notes.push({ date: today(), text: update.description, source });
+      break;
+    case "set_flag":
+      if (!r.flags.includes(update.description)) {
+        r.flags.push(update.description);
+      }
+      break;
+  }
+
+  return r;
+}
+
+export function applyCrmUpdates(record: CrmRecord, updates: CrmUpdate[], source: string): CrmRecord {
+  return updates.reduce((r, u) => applyCrmUpdate(r, u, source), record);
 }

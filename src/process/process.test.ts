@@ -2,7 +2,8 @@ import { describe, it, expect } from "vitest";
 import { openCase, receiveMessage, openBlockers, isBlocked, classifyHeuristic } from "./index";
 import { FALLBACKS } from "../ingest/fallbacks";
 import { DEMO_CASES } from "../examples/cases";
-import { lookupCase } from "./caseDb";
+import { initialCrmRecord, applyCrmUpdates } from "./caseDb";
+import { extractFromEvent } from "./extract";
 
 const newCase = () => openCase(FALLBACKS.complete("raw"));
 const messyCase = () => openCase(FALLBACKS.chaotic("raw"));
@@ -68,16 +69,27 @@ describe("process — Heuristik-Klassifikation", () => {
   });
 });
 
-describe("process — Fake Case Database", () => {
-  it("findet Auftragsdaten für bekannte Request-IDs", () => {
-    const rec = lookupCase("REQ-CHAOTIC-001");
-    expect(rec).not.toBeNull();
-    expect(rec!.applicantName).toBe("Hausverwaltung Kröllwitz GmbH");
-    expect(rec!.pending.length).toBeGreaterThan(0);
-    expect(rec!.daysOpen).toBe(42);
+describe("process — CRM Record + Extraction", () => {
+  it("erstellt CRM-Record und wendet Extraktionen an", () => {
+    const crm = initialCrmRecord("Maria Schmidt", "Bahnhofstraße 12, 06108 Halle", 9.8);
+    expect(crm.applicant).toBe("Maria Schmidt");
+    expect(crm.milestones.length).toBeGreaterThan(0);
+    expect(crm.pendingItems.length).toBe(1);
   });
 
-  it("gibt null für unbekannte IDs", () => {
-    expect(lookupCase("UNKNOWN")).toBeNull();
+  it("extrahiert Daten aus Techniker-Blocker und aktualisiert CRM", () => {
+    let k = messyCase();
+    const messyDemo = DEMO_CASES.find((c) => c.id === "messy")!;
+    const techMsg = messyDemo.messages.find((m) => m.senderRole === "technician" && m.expectBlocker)!;
+    k = receiveMessage(k, { ...techMsg, requestId: k.requestId });
+    const techEvent = k.events.find((e) => e.type === "problem_report" && e.severity === "blocker")!;
+    const extraction = extractFromEvent(techEvent);
+    expect(extraction.fields.length).toBeGreaterThan(0);
+    expect(extraction.crmUpdates.some((u) => u.action === "add_blocker")).toBe(true);
+
+    let crm = initialCrmRecord("Test", "Test", 11);
+    crm = applyCrmUpdates(crm, extraction.crmUpdates, "Techniker");
+    expect(crm.pendingItems.some((p) => p.label.includes("⛔"))).toBe(true);
+    expect(crm.notes.length).toBeGreaterThan(1);
   });
 });
