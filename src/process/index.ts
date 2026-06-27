@@ -14,6 +14,12 @@ import { classifyMessage, type RawMessage } from "./classify";
 export * from "./types";
 export { classifyMessage, classifyHeuristic } from "./classify";
 export type { RawMessage } from "./classify";
+export { extractFromEvent } from "./extract";
+export type { ExtractedField, CrmUpdate, ExtractionResult } from "./extract";
+export { initialCrmRecord, applyCrmUpdates } from "./caseDb";
+export type { CrmRecord, Milestone, PendingItem, CaseNote } from "./caseDb";
+export { translateForStakeholders } from "./translate";
+export type { Stakeholder, StakeholderPerspective, TranslatedProblem } from "./translate";
 
 /** Legt einen Vorgang aus einer kanonischen Anfrage an (mit Start-Event). */
 export function openCase(req: CanonicalRequest, phase: ProcessPhase = "application_phase_1"): ProcessCase {

@@ -5,7 +5,10 @@ import { validate, type ValidationResult } from "../validate";
 import { toVdeMapped, type VdeRow } from "../adapters/vde";
 import { toTina, type TinaRecord } from "../adapters/tina";
 import { buildResponse, type DraftMessage } from "../respond";
-import { openCase, receiveMessage, type ProcessCase } from "../process";
+import {
+  openCase, receiveMessage, extractFromEvent, applyCrmUpdates, initialCrmRecord,
+  type ProcessCase, type ExtractionResult, type CrmRecord,
+} from "../process";
 import type { MockMessage } from "../examples/messages";
 
 import { InputPicker } from "./components/InputPicker";
@@ -15,6 +18,7 @@ import { ValidationView } from "./components/ValidationView";
 import { ResponseView } from "./components/ResponseView";
 import { ProcessTimelineView } from "./components/ProcessTimelineView";
 import { RaciView } from "./components/RaciView";
+import { TransparencyView } from "./components/TransparencyView";
 
 interface PipelineState {
   example: ExampleInput;
@@ -24,11 +28,14 @@ interface PipelineState {
   tina: TinaRecord;
   draft: DraftMessage;
   kase: ProcessCase;
+  crmRecord: CrmRecord;
+  extractions: Map<string, ExtractionResult>;
 }
 
 export function App() {
   const [state, setState] = useState<PipelineState | null>(null);
   const [busy, setBusy] = useState(false);
+  const [tab, setTab] = useState<"solution1" | "solution2">("solution1");
 
   async function run(example: ExampleInput) {
     setBusy(true);
@@ -39,16 +46,34 @@ export function App() {
     const tina = toTina(req);
     const draft = buildResponse(req, validation);
     const kase = openCase(req);
-    setState({ example, ingestResult, validation, vdeRows, tina, draft, kase });
+    const applicant = req.parties.find((p) => p.role === "operator")?.name ?? "Unbekannt";
+    const site = [req.installation.siteAddress.street, req.installation.siteAddress.no, req.installation.siteAddress.zip, req.installation.siteAddress.city]
+      .filter(Boolean).join(" ") || "Keine Adresse";
+    const crmRecord = initialCrmRecord(applicant, site, req.installation.powerKw ?? 0);
+    setState({ example, ingestResult, validation, vdeRows, tina, draft, kase, crmRecord, extractions: new Map() });
     setBusy(false);
   }
 
   function onMessage(msg: MockMessage) {
-    setState((prev) =>
-      prev
-        ? { ...prev, kase: receiveMessage(prev.kase, { ...msg, requestId: prev.kase.requestId }) }
-        : prev,
-    );
+    setState((prev) => {
+      if (!prev) return prev;
+      const newKase = receiveMessage(prev.kase, { ...msg, requestId: prev.kase.requestId });
+      const newEvent = newKase.events.find((e) => !prev.kase.events.some((pe) => pe.id === e.id));
+      if (!newEvent) return { ...prev, kase: newKase };
+
+      const extraction = extractFromEvent(newEvent);
+      const newExtractions = new Map(prev.extractions);
+      newExtractions.set(newEvent.id, extraction);
+
+      const roleLabel = newEvent.senderRole === "technician" ? "Techniker"
+        : newEvent.senderRole === "installer" ? "Elektrofachbetrieb"
+        : newEvent.senderRole === "investor" ? "Investor"
+        : newEvent.senderRole === "applicant" ? "Antragsteller"
+        : "System";
+      const newCrm = applyCrmUpdates(prev.crmRecord, extraction.crmUpdates, roleLabel);
+
+      return { ...prev, kase: newKase, crmRecord: newCrm, extractions: newExtractions };
+    });
   }
 
   return (
@@ -67,36 +92,58 @@ export function App() {
 
       {state && (
         <main>
-          <div className="step-arrow">&#x25BC;</div>
+          <div className="tabs">
+            <button className={"tab" + (tab === "solution1" ? " tab--active" : "")} onClick={() => setTab("solution1")}>
+              <span className="tab__label">Lösung 1</span>
+              <span className="tab__desc">Anfrage → CRM-Pipeline</span>
+            </button>
+            <button className={"tab" + (tab === "solution2" ? " tab--active" : "")} onClick={() => setTab("solution2")}>
+              <span className="tab__label">Lösung 2</span>
+              <span className="tab__desc">Probleme transparent machen</span>
+            </button>
+          </div>
 
-          <ParsedDataView
-            raw={state.example.raw}
-            request={state.ingestResult.request}
-            channel={state.example.channel}
-          />
-
-          <div className="step-arrow">&#x25BC;</div>
-
-          <ValidationView result={state.validation} />
-
-          {!state.validation.ok && (
+          {tab === "solution1" && (
             <>
+              <ParsedDataView
+                raw={state.example.raw}
+                request={state.ingestResult.request}
+                channel={state.example.channel}
+              />
+
               <div className="step-arrow">&#x25BC;</div>
-              <ResponseView draft={state.draft} />
+
+              <ValidationView result={state.validation} />
+
+              {!state.validation.ok && (
+                <>
+                  <div className="step-arrow">&#x25BC;</div>
+                  <ResponseView draft={state.draft} />
+                </>
+              )}
+
+              <div className="step-arrow">&#x25BC;</div>
+
+              <ProcessTimelineView
+                kase={state.kase}
+                crmRecord={state.crmRecord}
+                extractions={state.extractions}
+                onMessage={onMessage}
+              />
+
+              <div className="step-arrow">&#x25BC;</div>
+
+              <TinaExportView record={state.tina} missing={state.validation.missing} />
+
+              <div className="step-arrow">&#x25BC;</div>
+
+              <RaciView />
             </>
           )}
 
-          <div className="step-arrow">&#x25BC;</div>
-
-          <ProcessTimelineView kase={state.kase} onMessage={onMessage} />
-
-          <div className="step-arrow">&#x25BC;</div>
-
-          <TinaExportView record={state.tina} missing={state.validation.missing} />
-
-          <div className="step-arrow">&#x25BC;</div>
-
-          <RaciView />
+          {tab === "solution2" && (
+            <TransparencyView kase={state.kase} onMessage={onMessage} />
+          )}
         </main>
       )}
 
